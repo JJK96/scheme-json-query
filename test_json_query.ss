@@ -3,9 +3,13 @@
 (define-syntax test
     (syntax-rules ()
         ((_ name input desired-result)
-         (let ((result input))
-             (unless (equal? result desired-result)
-                     (error name (format #f "\nExecuted:\n~a\nresult        : ~a\ndesired-result: ~a" 'input result desired-result)))))))
+         (guard (ex 
+            (else (begin 
+               (format #t "Exception while executing test ~a" name)
+               (raise ex))))
+            (let ((result input))
+                (unless (equal? result desired-result)
+                    (error name (format #f "\nExecuted:\n~a\nresult        : ~a\ndesired-result: ~a" 'input result desired-result))))))))
 
 (define data '((a . (( b . "res" )))
                (b . #((( key . 1)) ((key . 2)) ((key . 3)) ((key . 4))))
@@ -54,7 +58,7 @@
        data)
       (vector '((key . 2))))
 
-(test 'filter-macro
+(test 'filter-macro-query
       ((json:query `("b" (filter (eq? ,(json:query '("key")) 2))))
        data)
       (vector '((key . 2))))
@@ -84,3 +88,13 @@
       ((json:query '("c" (* keys) flatten unique))
        data)
       (vector 'd))
+
+(test 'replace
+      ((json:query '("a" (replace ((c . "res")))))
+       data)
+      '((c . "res")))
+
+(test 'replace-macro
+      ((json:query `("a" (replace ((c . ,(json:query '("b")))))))
+       data)
+      '((c . "res")))

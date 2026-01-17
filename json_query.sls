@@ -6,6 +6,7 @@
              json:values
              json:flatten
              json:unique
+             json:replace
              ->
              vector-filter
              debug
@@ -34,8 +35,9 @@
                  '())
                 ((vector? tree)
                  (vector-map (tree-map func) tree))
-                ((list? tree)
-                 (map (tree-map func) tree))
+                ((pair? tree)
+                 (cons ((tree-map func) (car tree))
+                       ((tree-map func) (cdr tree))))
                 (else (func tree)))))
 
      (define (displayln . x)
@@ -71,6 +73,9 @@
              delete-duplicates
              list->vector))
 
+     (define (json:replace new-node)
+         (lambda (node) new-node))
+
      (define (execute-procedures tree node)
          ; Execute all procedures found anywhere within the node
         ((tree-map 
@@ -79,6 +84,13 @@
                     (obj node)
                     obj)))
          tree))
+
+     (define (to-json-function func)
+        (-> func
+            symbol->string
+            (lambda (x) (string-append "json:" x))
+            string->symbol
+            eval))
 
      (define (interpret-function-rule rule)
          (if (procedure? rule) rule
@@ -89,10 +101,17 @@
                  ;input is a vector of nodes instead of just a single node
                  (lambda (nodes) (vector-map (json:query args) nodes)))
                 ((eq? func 'filter)
-                 (lambda (nodes) (vector-filter (interpret-function-rule (car args))
-                                                 nodes)))
+                 (lambda (nodes) 
+                     (vector-filter 
+                          (lambda (node)
+                            (eval (execute-procedures (car args)
+                                                      node)))
+                          nodes)))
                 (else
-                 (lambda (node) (eval (execute-procedures rule node))))))))
+                 ; For replace
+                 (lambda (node) ((apply (to-json-function func)
+                                        (execute-procedures args node))
+                                 node)))))))
 
      (define (interpret-rule rule)
         (cond
@@ -101,11 +120,7 @@
             ((procedure? rule)
              rule)
             ((symbol? rule)
-             (-> rule
-                 symbol->string
-                 (lambda (x) (string-append "json:" x))
-                 string->symbol
-                 eval))
+             (to-json-function rule))
             ((list? rule)
              (interpret-function-rule rule))
             (else (error 'inperpret-rule "Incorrect rule" rule))))
