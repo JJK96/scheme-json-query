@@ -114,3 +114,7 @@
        data)
       (vector 1 1))
 
+(test 'list-ref
+      ((json:query '("b" 1))
+       data)
+      '((key . 2)))

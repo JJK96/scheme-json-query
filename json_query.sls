@@ -27,11 +27,14 @@
                 (else (func tree)))))
 
      (define (json:ref key)
-         (let ((key (if (string? key) 
-                        (string->symbol key)
-                        key)))
-             (lambda (node)
-                 (cdr (assq key node)))))
+         (cond
+            ((string? key)
+             (json:ref (string->symbol key)))
+            ((number? key)
+             (lambda (nodes) (vector-ref nodes key)))
+            (else
+                (lambda (node)
+                     (cdr (assq key node))))))
      
      (define (json:keys node)
          (list->vector (map car node)))
@@ -90,7 +93,8 @@
 
      (define (interpret-rule rule)
         (cond
-            ((string? rule)
+            ((or (string? rule)
+                 (number? rule))
              (json:ref rule))
             ((procedure? rule)
              rule)
