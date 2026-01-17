@@ -1,5 +1,7 @@
 (load "./json_query.sls")
-(import (json-query))
+(load "./util.sls")
+(import (json-query)
+        (util))
 (define-syntax test
     (syntax-rules ()
         ((_ name input desired-result)

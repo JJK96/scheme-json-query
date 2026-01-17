@@ -1,4 +1,5 @@
 #!r6rs
+(load "./util.sls")
 (library (json-query) 
      (export json:query
              json:ref
@@ -6,27 +7,12 @@
              json:values
              json:flatten
              json:unique
-             json:replace
-             ->
-             vector-filter
-             debug
-             tree-map)
+             json:replace)
      (import (rnrs)
              (srfi-180)
              (only (srfi :1) delete-duplicates)
-             (only (chezscheme) format eval vector-append))
-
-     (define (-> init . funcs)
-         (fold-left 
-                (lambda (val f) (f val))
-                init 
-                funcs))
-
-     (define (vector-filter func v)
-         (-> v
-             vector->list
-             (lambda (x) (filter func x))
-             list->vector))
+             (only (chezscheme) format eval vector-append)
+             (util))
 
      (define (tree-map func)
          (lambda (tree)
@@ -39,17 +25,6 @@
                  (cons ((tree-map func) (car tree))
                        ((tree-map func) (cdr tree))))
                 (else (func tree)))))
-
-     (define (displayln . x)
-         (map
-          (lambda (x)
-             (display x)
-             (display "\n"))
-          x))
-
-     (define (debug x)
-         (displayln x)
-         x)
 
      (define (json:ref key)
          (let ((key (if (string? key) 
