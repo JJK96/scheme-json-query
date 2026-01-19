@@ -2,6 +2,8 @@
 
 A query library for JSON code, based on SRFI-180, implemented for Chez Scheme.
 
+See the [chicken branch](https://github.com/JJK96/chez-json-query/tree/chicken) for a Chicken port.
+
 This library takes inspiration from [SXPath](https://metapaper.net/query/sxpath/) and [json-tools](https://github.com/ktakashi/json-tools/).
 
 The repository also includes the script `jq`, which is (a very limited) alternative to [jq](https://jqlang.org/).
