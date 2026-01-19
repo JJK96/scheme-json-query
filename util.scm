@@ -1,4 +1,5 @@
-(declare (unit util))
+; Uncomment for static compilation
+;(declare (unit util))
 (module (util) (->
                 vector-filter
                 vector-map)

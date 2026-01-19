@@ -2,3 +2,5 @@ jq
 *.import.scm
 *.so
 *.link
+build
+*.o

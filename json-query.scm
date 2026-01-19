@@ -1,5 +1,6 @@
-(declare (unit json-query))
-(declare (uses util))
+; Uncomment for static compilation
+;(declare (unit json-query))
+;(declare (uses util))
 (module (json-query) (json:query
                       json:ref
                       json:keys
