@@ -1,6 +1,6 @@
 # JSON Query
 
-A query library for JSON code, based on SRFI-180, implemented for Chez Scheme.
+A query library for JSON code, based on SRFI-180, implemented for Chicken Scheme.
 
 See the [chicken branch](https://github.com/JJK96/chez-json-query/tree/chicken) for a Chicken port.
 

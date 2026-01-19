@@ -1,4 +1,6 @@
 (import (json-query)
+        srfi-34
+        (chicken format)
         (util))
 
 (define-syntax test
@@ -16,6 +18,7 @@
                (b . #((( key . 1)) ((key . 2)) ((key . 3)) ((key . 4))))
                (c . #((( d . #(1 2 3 4))) (( d . #(5 6 7 8)))))
                (d . #((( key1 . 1) (key2 . 1)) (( key1 . 1) (key2 . 2))))))
+
 
 (test 'single-ref
       ((json:query '("a"))

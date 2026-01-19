@@ -1,13 +1,18 @@
-#!/usr/bin/scheme --script
+; Command-line program as an alternative to jqlang.org
+(import json-query
+        srfi-180
+        (chicken base)
+        (chicken port)
+        (chicken pretty-print)
+        (chicken eval)
+        (only srfi-193 command-line))
 
-(import (json-query)
-        (srfi-180)
-        (debug)
-        (chezscheme))
-
+(eval '(import json-query 
+               srfi-1) 
+   (interaction-environment))
 (define jq json:query)
 
-(define-record-type args (fields (mutable filter) (mutable input)))
+(define-record args filter input)
 
 (define (parse-command-line command-line args)
     (cond
@@ -30,7 +35,7 @@
         read))
 
 (define result 
-    ((eval `(jq ,filter))
+    ((eval `(jq ,filter) (interaction-environment))
      data))
 
 (if (string? result)

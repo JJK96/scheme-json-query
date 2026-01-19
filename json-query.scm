@@ -1,32 +1,24 @@
-#!r6rs
-(library (json-query) 
-     (export json:query
-             json:ref
-             json:keys
-             json:values
-             json:flatten
-             json:unique
-             json:replace
-             json:write)
-     (import (rnrs)
-             (srfi-180)
-             (only (srfi :1) delete-duplicates)
-             (only (chezscheme) format eval vector-append with-output-to-string)
-             (util))
+(module (json-query) (json:query
+                      json:ref
+                      json:keys
+                      json:values
+                      json:flatten
+                      json:unique
+                      json:replace
+                      json:write)
+     (import scheme
+             (chicken port)
+             (chicken base)
+             (chicken eval)
+             (chicken module)
+             (only srfi-180 json-write)
+             (only vector-lib vector-map vector-append)
+             (only srfi-1 delete-duplicates)
+             util)
 
-     (define (tree-map func)
-         (lambda (tree)
-             (cond
-                ((null? tree)
-                 '())
-                ((vector? tree)
-                 (vector-map (tree-map func) tree))
-                ((pair? tree)
-                 (cons ((tree-map func) (car tree))
-                       ((tree-map func) (cdr tree))))
-                (else (func tree)))))
+    (define env (interaction-environment))
 
-     (define (json:ref key)
+    (define (json:ref key)
          (cond
             ((string? key)
              (json:ref (string->symbol key)))
@@ -58,6 +50,19 @@
          (with-output-to-string 
              (lambda () (json-write node))))
 
+    (define (tree-map func)
+         (lambda (tree)
+             (cond
+                ((null? tree)
+                 '())
+                ((vector? tree)
+                 (vector-map (tree-map func) tree))
+                ((pair? tree)
+                 (cons ((tree-map func) (car tree))
+                       ((tree-map func) (cdr tree))))
+                (else (func tree)))))
+
+
      (define (execute-procedures tree node)
          ; Execute all procedures found anywhere within the node
         ((tree-map 
@@ -72,7 +77,7 @@
             symbol->string
             (lambda (x) (string-append "json:" x))
             string->symbol
-            eval))
+            (lambda (x) (eval x env))))
 
      (define (interpret-function-rule rule)
          (if (procedure? rule) rule
@@ -95,7 +100,8 @@
                      (vector-filter 
                           (lambda (node)
                             (eval (execute-procedures (car args)
-                                                      node)))
+                                                      node)
+                                  env))
                           nodes)))
                 (else
                  ; For replace
