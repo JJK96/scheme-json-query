@@ -39,7 +39,7 @@ json-function-without-args ::= ref      ; json:ref     (Get a value or vector-it
 function-rule ::= (* rule ...)                        ; For-each: Apply the given rules to each node in the vector of nodes that it receives.
                |  (*_ rule ...)                       ; For-each+flatten: Apply the given rules to each node in the vector of nodes that it receives, and afterwards flatten the result into a single vector.
                |  (filter procedure)                  ; Filter the nodes that it receives by the given procedure. This procedure should take as input a single node and return a boolean. The function can be arbitrary scheme functions. Any unquoted functions in the tree of the procedure argument will be applied to the given input node. This allows for recursive json:query invocations to filter based on specific properties of the given node.
-               |  (json-function-with-args arg ...)   ; Invoke a json: function with the given arguments. These functions return a lambda that takes a node or vector of nodes as input.
+               |  json-function-with-args             ; Invoke a json: function with the given arguments. These functions return a lambda that takes a node or vector of nodes as input.
 
 json-function-with-args ::= (replace node)  ; json:replace  (Replace the input with the given node. This node object can contain unquoted functions, these functions will then be applied to the given input node (or vector). This function will allow creating new objects or vectors based on the given input.)
 ```
