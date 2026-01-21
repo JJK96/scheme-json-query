@@ -35,6 +35,12 @@
                  (json:query (list arg ...)))))
     (interaction-environment))
 
+(eval '(define-syntax accessor
+            (syntax-rules ()
+                ((accessor arg ...)
+                 (lambda args (json:query `(arg ... ,@args))))))
+    (interaction-environment))
+
 ; Functions for use in queries
 (define prefix string-prefix?)
 (define contains string-contains)
