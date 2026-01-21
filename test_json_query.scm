@@ -25,6 +25,11 @@
        data)
       '((b . "res")))
 
+(test 'single-ref1
+      ((json:query '("b"))
+       '((b . "res")))
+      "res")
+
 (test 'multiple-ref
       ((json:query '("a" "b"))
        data)
@@ -49,6 +54,11 @@
       ((json:query '("b" (* "key")))
        data)
       '#(1 2 3 4))
+
+(test 'json-ref
+      ((json:ref 'key)
+       '((key . "res")))
+      "res")
 
 (test 'filter-explicit
       ((json:query `("b" ,(lambda (nodes) (vector-filter (lambda (node) (eq? ((json:ref 'key) node) 2))
@@ -131,3 +141,46 @@
                                     ,(json:query '(1))))))
        data)
       '#(((key . 1)) ((key . 2))))
+
+(test 'json-edit-no-changes
+      ((json:edit `("a" "b"))
+       data)
+      data)
+
+(define data1 '((a . (( b . "res" )))))
+
+(test 'json-edit-replace
+      ((json:edit `("a" "b" ,(lambda (node) "x")))
+       data1)
+      '((a . (( b . "x" )))))
+
+(test 'json-edit-replace-macro
+      ((json:edit `("a" "b" (replace "x")))
+       data1)
+      '((a . (( b . "x" )))))
+
+(test 'json-query-as-edit
+      ((json:edit `("a" "b" ,(lambda (node) ((set-result) node))))
+       data)
+      "res")
+
+(test 'json-edit-filter-macro-query
+      ((json:edit `("b" (filter (eq? ,(json:query '("key")) 2))))
+       '((b . #((( key . 1)) ((key . 2)) ((key . 3)) ((key . 4))))))
+      '((b . #(((key . 2))))))
+
+(test 'json-edit-after-filter
+      ((json:edit `("b"
+                   (filter (eq? ,(json:query '("key")) 2)) 
+                   ,(json:query '((*_ values) 0))))
+       '((b . #((( key . 1)) ((key . 2)) ((key . 3)) ((key . 4))))))
+      '((b . 2)))
+
+(test 'json-edit-after-filter1
+      ((json:edit `("b" 
+                    (filter (eq? ,(json:query '("key")) 2)) 
+                    (*_ values) 
+                    0 
+                    ,(lambda (x) (+ x 1))))
+       '((b . #((( key . 1)) ((key . 2)) ((key . 3)) ((key . 4))))))
+      '((b . #(3))))

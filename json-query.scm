@@ -9,20 +9,45 @@
                       json:unique
                       json:replace
                       json:filter
-                      json:write)
+                      json:write
+                      json:edit
+                      set-result)
      (import scheme
              (chicken port)
              (chicken base)
              (chicken eval)
              (chicken module)
              (only srfi-180 json-write)
-             (only vector-lib vector-map vector-append)
+             (only vector-lib vector-map vector-append vector-copy)
              (only srfi-1 delete-duplicates filter)
              util)
 
     (define env (interaction-environment))
+    (define set-result (make-parameter '()))
+    (define json:querying (make-parameter #t))
 
-    (define (json:ref key)
+    (define (json:traverse:ref key node next-rules)
+        ; The idea here is to traverse into the value indicated by key
+        ; and return the resulting value in-place
+        (cond
+            ((list? node)
+             (map (lambda (entry)
+                     (let ((k (car entry))
+                           (v (cdr entry))
+                           (key (if (string? key) 
+                                    (string->symbol key) 
+                                    key)))
+                     (if (eq? key k)
+                         (cons k (json:traverse* v next-rules))
+                         entry)))
+                node))
+            ((vector? node)
+             (let ((new-value (json:traverse* (vector-ref node key) next-rules))
+                   (new-vector (vector-copy node)))
+                (vector-set! new-vector key new-value)
+                new-vector))))
+
+     (define (json:ref key)
          (cond
             ((string? key)
              (json:ref (string->symbol key)))
@@ -30,7 +55,7 @@
              (lambda (nodes) (vector-ref nodes key)))
             (else
                 (lambda (node)
-                     (cdr (assq key node))))))
+                     (cdr (assq key node))))))  
      
      (define (json:keys node)
          (list->vector (map car node)))
@@ -81,51 +106,79 @@
             string->symbol
             (lambda (x) (eval x env))))
 
-     (define (interpret-function-rule rule)
-         (if (procedure? rule) rule
+     (define (json:traverse:function node rule next-rules)
          (let ((func (car rule))
                (args (cdr rule)))
              (cond
                 ((eq? func '*)
                  ;for-each: Execute for each value in vector.
                  ;Input is a vector of nodes instead of just a single node
-                 (lambda (nodes) (vector-map (json:query args) nodes)))
-
+                 (json:traverse*
+                    (vector-map
+                        (lambda (n) (json:traverse n args))
+                        node)
+                    next-rules))
                 ((eq? func '*_)
                  ;for-each+flatten Execute for each value in vector, then flatten.
-                 (lambda (nodes) 
-                     (-> nodes
-                         (interpret-function-rule `(* ,@args))
-                         json:flatten)))
+                 (json:traverse:function
+                    node
+                    `(* ,@args)
+                    (cons json:flatten next-rules)))
                 ((eq? func 'filter)
                  ; We make this a separate branch because we need to evaluate the first argument 
                  ; in order to execute it as a function
-                 (json:filter
-                     (lambda (node)
-                        (eval (execute-procedures (car args)
-                                                  node)
-                              env))))
-                (else
-                 ; For replace
-                 (lambda (node) ((apply (to-json-function func)
-                                        (execute-procedures args node))
-                                 node)))))))
+                 (json:traverse* 
+                      ((json:filter
+                          (lambda (n)
+                            ; First execute all procedures in the arguments on the given node (e.g. (json:query ...))
+                            (let ((condition-syntax (execute-procedures (car args) n)))
+                             (eval condition-syntax env))))
+                          node)
+                      next-rules))
+                (else (let ((func (apply (to-json-function func)
+                                         (execute-procedures args node))))
+                        (json:traverse* (func node) next-rules))))))
 
-     (define (interpret-rule rule)
-        (cond
+     (define (json:traverse* node rules)
+        (if (null? rules) 
+            ; If we are in json:query context overwrite the root object with the current node
+            ; Otherwise (in json:edit context) return the current node in-place
+            (if (json:querying)
+                ((set-result) node)
+                node)
+        (let ((rule (car rules))
+              (next-rules (cdr rules)))
+          (cond
             ((or (string? rule)
                  (number? rule))
-             (json:ref rule))
+             (json:traverse:ref rule node (cdr rules)))
             ((procedure? rule)
-             rule)
+             (json:traverse* (rule node) next-rules))
+            ; e.g. keys, values, write, unique
             ((symbol? rule)
-             (to-json-function rule))
+             (json:traverse* ((to-json-function rule) node) 
+                            next-rules))
+            ; e.g. filter, *, *_
             ((list? rule)
-             (interpret-function-rule rule))
-            (else (error 'inperpret-rule "Incorrect rule" rule))))
+             (json:traverse:function node rule next-rules))
+            (else (error 'json:traverse* "Incorrect rule" rule))))))
+
+     (define (json:traverse node rules)
+        (call/cc
+            (lambda (cc)
+                ; We set the parameter set-result to the current continuation
+                ; This allows any function to immediately overwritet he root node by calling this continuation
+                (parameterize ((set-result cc))
+                    (json:traverse* node rules)))))
+
+     (define (json:edit rules)
+        (lambda (node)
+            (parameterize ((json:querying #f))
+                (json:traverse node rules))))
          
      (define (json:query rules)
-         (lambda (node) 
-            (apply -> node (map interpret-rule rules))))
+        (lambda (node)
+            (parameterize ((json:querying #t))
+                (json:traverse node rules))))
          
 )
