@@ -3,6 +3,8 @@
 (import json-query
         srfi-180
         srfi-13
+        util
+        vector-lib
         (except scheme =)
         (chicken base)
         (chicken port)
@@ -13,7 +15,10 @@
 (eval '(import (except scheme =)
                json-query 
                srfi-1
-               srfi-13) 
+               srfi-13
+               srfi-180
+               vector-lib
+               util) 
    (interaction-environment))
 
 (eval '(define-syntax =

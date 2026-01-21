@@ -53,19 +53,6 @@
          (with-output-to-string 
              (lambda () (json-write node))))
 
-    (define (tree-map func)
-         (lambda (tree)
-             (cond
-                ((null? tree)
-                 '())
-                ((vector? tree)
-                 (vector-map (tree-map func) tree))
-                ((pair? tree)
-                 (cons ((tree-map func) (car tree))
-                       ((tree-map func) (cdr tree))))
-                (else (func tree)))))
-
-
      (define (execute-procedures tree node)
          ; Execute all procedures found anywhere within the node
         ((tree-map 
