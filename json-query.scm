@@ -88,7 +88,7 @@
 
      (define (json:write node)
          (with-output-to-string 
-             (lambda () (json-write node))))
+             (lambda () (json-write node (indenting-accumulator "  ")))))
 
      (define (execute-procedures tree node)
          ; Execute all procedures found anywhere within the node
