@@ -95,12 +95,14 @@
       (lambda (txt)
         (cond
           ((eq? txt #\{)
-            (if (not (member last '(#\[ #\,)))
-                (indent))
+            (if (not (eq? last #\:))
+                (begin
+                  (newline)
+                  (indent)))
             (push-scope txt)
             (accumulator txt)
             (newline))
-          ((eq? txt #\:) (accumulator txt))
+          ((eq? txt #\:) (accumulator txt) (display " "))
           ((eq? txt #\,) (accumulator txt))
           ((eq? txt #\})
             (pop-scope)
@@ -118,8 +120,7 @@
           (else
             (if (member last '(#\, #\[))
                 (newline))
-            (if (not (eq? last #\:))
-                (indent))
+            (indent)
             (accumulator txt)))
         (set! last txt)))
 )
