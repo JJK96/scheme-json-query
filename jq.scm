@@ -16,6 +16,7 @@
                json-query 
                srfi-1
                srfi-13
+               srfi-34
                srfi-180
                vector-lib
                util) 
