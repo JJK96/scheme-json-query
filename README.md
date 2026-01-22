@@ -6,17 +6,27 @@ See the [chez branch](https://github.com/JJK96/scheme-json-query/tree/chez) for 
 
 This library takes inspiration from [SXPath](https://metapaper.net/query/sxpath/) and [json-tools](https://github.com/ktakashi/json-tools/).
 
-The repository also includes the script `jq`, which is (a very limited) alternative to [jq](https://jqlang.org/).
+The repository also includes the script `jq`, which is (a very barebones) alternative to [jq](https://jqlang.org/).
 
-## Query language reference
+## High-level overview
 
-The library provides the function `json:query` with the following definition:
+The library provides two main functions with the following definitions:
 
 ```
 (json:query query)
+(json:edit query)
 ```
 
-Where query is a quoted S-expression with the following syntax:
+Both use the same traverser logic. The traverser applies a rule to the input and then passes the result through to the next rule. There are two kinds of rules:
+
+* Traversing rules: These rules return the result of the next rules in-place. For example, the `ref-rule` obtains the node or vector indicated by the given key and continues traversing the rest of the rules with this context. Once traversing is finished the result is returned in-place and the complete object is returned. This means that if the subsequent rules do not make any modifications, the complete invocation does not make any changes to the JSON. The traversing rules are: `ref-rule`, `(* ...)`
+* Modifying rules: These rules modify the input and continue traversing the rest of the rules. The result of subsequent rules is returned as the complete object. The other rules are modifying.
+
+The difference between `json:query` and `json:edit` is that `json:query` will return the result of the last rule, skipping the in-place modifications (by calling the continuation of the `json:query` invocation) while the `json:edit` function will return the results of each rule in-place. This allows replacing specific parts of the data with `json:edit` using a query that ends with a `replace` or other modifiying rule, while `json:query` allows retrieving a specific part of the data.
+
+## Query language reference
+
+The query argument to the above functions is a quoted S-expression with the following syntax:
 
 ```bnf
 query ::= '(rule ...)
@@ -46,4 +56,4 @@ json-function-with-args ::= (replace node)  ; json:replace  (Replace the input w
 
 The given rules are transformed into functions that take a node or vector of nodes as argument. The final result is a function that can be applied to a parsed JSON object and transforms it using the given rules.
 
-See `test_json_query.ss` for examples.
+See `test_json_query.scm` for examples.
